@@ -1,6 +1,6 @@
 #include "HttpServer.h"
 
-int main(int argc, char **argv)
+int main()
 {
     HttpServer server = HttpServer(4221);
     server.start();

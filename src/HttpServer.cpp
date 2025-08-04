@@ -1,4 +1,5 @@
 #include "HttpServer.h"
+#include "RequestHandler.h"
 
 HttpServer::HttpServer(int port) : port(port) {};
 
@@ -30,14 +31,14 @@ void HttpServer::start()
 
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
     {
-        std::cerr << "Failed to bind to port 4221\n";
+        std::cerr << "Failed to bind to port " << port << '\n';
         return;
     }
 
     int connection_backlog = 5;
     if (listen(server_fd, connection_backlog) != 0)
     {
-        std::cerr << "listen failed\n";
+        std::cerr << "Listen failed\n";
         return;
     }
 
@@ -70,23 +71,9 @@ void HttpServer::start()
         else
         {
             buffer[n] = '\0';
-            std::stringstream ss(buffer);
-            std::string request, path;
-            ss >> request >> path;
-            if (path == "/")
-            {
-                send(client_socket, "HTTP/1.1 200 OK\r\n\r\n", 20, 0);
-            }
-            else if (path.rfind("/echo/", 0) == 0)
-            {
-                std::string str = path.substr(6);
-                std::string msg = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(str.size()) + "\r\n\r\n" + path.substr(6);
-                send(client_socket, msg.c_str(), msg.size(), 0);
-            }
-            else
-            {
-                send(client_socket, "HTTP/1.1 404 Not Found\r\n\r\n", 27, 0);
-            }
+            HttpRequest request = HttpRequest::parse(buffer);
+            std::string response = RequestHandler::handleRequest(request);
+            send(client_socket, response.c_str(), response.size(), 0);
         }
 
         close(client_socket);
