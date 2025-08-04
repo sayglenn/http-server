@@ -5,5 +5,5 @@ set -e
 echo "🔧 Building server..."
 make
 
-echo "🚀 Starting server..."
-./main
+echo "🚀 Starting server with args: $@"
+./main "$@"

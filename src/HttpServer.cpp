@@ -5,8 +5,10 @@ HttpServer::HttpServer(int port) : port(port), pool(NUM_THREADS) {}
 
 HttpServer::~HttpServer() { close(server_fd); }
 
-void HttpServer::start()
+void HttpServer::start(const std::string file_dir)
 {
+    std::cout << "File directory: " << file_dir << '\n';
+
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 
@@ -72,12 +74,12 @@ void HttpServer::start()
         {
             buffer[n] = '\0';
             std::string str_request(buffer, n);
-            pool.enqueue([str_request, client_socket]() {
+            pool.enqueue([str_request, client_socket, file_dir]()
+                         {
                 HttpRequest request = HttpRequest::parse(str_request);
-                std::string response = RequestHandler::handleRequest(request);
+                std::string response = RequestHandler::handleRequest(request, file_dir);
                 send(client_socket, response.c_str(), response.size(), 0);
-                close(client_socket);
-            });
+                close(client_socket); });
         }
     }
 }

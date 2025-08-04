@@ -27,7 +27,7 @@ public:
     HttpServer(int port);
     ~HttpServer();
 
-    void start();
+    void start(std::string file_dir = "");
 };
 
 #endif
