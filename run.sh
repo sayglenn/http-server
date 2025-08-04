@@ -6,4 +6,4 @@ echo "🔧 Building server..."
 make
 
 echo "🚀 Starting server..."
-./server
+./main
