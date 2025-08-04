@@ -12,12 +12,16 @@
 #include <netdb.h>
 #include <sstream>
 
+#include "ThreadPool.h"
+
 constexpr int BUFF_SIZE = 8192;
+constexpr int NUM_THREADS = 10;
 
 class HttpServer
 {
 private:
     int port, server_fd;
+    ThreadPool pool;
 
 public:
     HttpServer(int port);

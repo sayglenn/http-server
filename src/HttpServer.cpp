@@ -1,7 +1,7 @@
 #include "HttpServer.h"
 #include "RequestHandler.h"
 
-HttpServer::HttpServer(int port) : port(port) {};
+HttpServer::HttpServer(int port) : port(port), pool(NUM_THREADS) {}
 
 HttpServer::~HttpServer() { close(server_fd); }
 
@@ -71,11 +71,13 @@ void HttpServer::start()
         else
         {
             buffer[n] = '\0';
-            HttpRequest request = HttpRequest::parse(buffer);
-            std::string response = RequestHandler::handleRequest(request);
-            send(client_socket, response.c_str(), response.size(), 0);
+            std::string str_request(buffer, n);
+            pool.enqueue([str_request, client_socket]() {
+                HttpRequest request = HttpRequest::parse(str_request);
+                std::string response = RequestHandler::handleRequest(request);
+                send(client_socket, response.c_str(), response.size(), 0);
+                close(client_socket);
+            });
         }
-
-        close(client_socket);
     }
 }
