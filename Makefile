@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2
-TARGET = server
-SRC = src/server.cpp
+TARGET = main
+SRC = src/*.cpp
 
 all: $(TARGET)
 

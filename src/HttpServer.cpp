@@ -1,52 +1,44 @@
-#include <iostream>
-#include <cstdlib>
-#include <string>
-#include <cstring>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sstream>
+#include "HttpServer.h"
 
-constexpr int BUFF_SIZE = 8192;
+HttpServer::HttpServer(int port) : port(port) {};
 
-int main(int argc, char **argv)
+HttpServer::~HttpServer() { close(server_fd); }
+
+void HttpServer::start()
 {
-    // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0)
     {
         std::cerr << "Failed to create server socket\n";
-        return 1;
+        return;
     }
 
     int reuse = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
     {
         std::cerr << "setsockopt failed\n";
-        return 1;
+        return;
     }
 
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(4221);
+    server_addr.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
     {
         std::cerr << "Failed to bind to port 4221\n";
-        return 1;
+        return;
     }
 
     int connection_backlog = 5;
     if (listen(server_fd, connection_backlog) != 0)
     {
         std::cerr << "listen failed\n";
-        return 1;
+        return;
     }
 
     struct sockaddr_in client_addr;
@@ -99,8 +91,4 @@ int main(int argc, char **argv)
 
         close(client_socket);
     }
-
-    close(server_fd);
-
-    return 0;
 }
