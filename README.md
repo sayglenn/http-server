@@ -39,11 +39,11 @@ curl --header "User-Agent: new-agent/1.0" http://localhost:4221/user-agent
 # Prints new-agent/1.0
 ```
 
-- Reads files from a specified directory, assuming it exists.
+- Reads files from a specified directory, assuming the directory exists. This is done by sending a `GET` request to the `/files` endpoint.
 
 ```
 ./run.sh --directory /tmp/
-# sets the working directory to /tmp/
+# Sets the working directory to /tmp/
 
 echo -n 'You should see this!' > /tmp/example
 curl http://localhost:4221/files/example
@@ -51,6 +51,19 @@ curl http://localhost:4221/files/example
 
 curl -i http://localhost:4221/files/nonexistent
 # Prints 'HTTP/1.1 404 Not Found'
+```
+
+- Write to files to a specified directory, assuming the directory exists. Files that do not exist will be automatically created. This is done by sending a `POST` request to the `/files` endpoint, with the --data flag to input information into the request body.
+
+```
+./run.sh --directory /tmp/
+# Sets the working directory to /tmp/
+
+curl --data "Wrote some data" -H "Content-Type: application/octet-stream" http://localhost:4221/files/test_file
+# Should return 201 Created
+
+curl http://localhost:4221/files/test_file
+# Prints 'Wrote some data'
 ```
 
 Thank you for looking through this project!

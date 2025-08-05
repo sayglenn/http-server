@@ -23,18 +23,40 @@ const std::string RequestHandler::handleRequest(const HttpRequest &request, cons
     else if (path.rfind("/files/", 0) == 0)
     {
         std::string file_path = file_dir + path.substr(7);
-        std::ifstream file(file_path);
+        std::fstream file(file_path);
 
-        if (!file.is_open())
+        if (request.getMethod() == "GET")
         {
-            return "HTTP/1.1 404 Not Found\r\n\r\n";
-        }
+            if (!file.is_open())
+            {
+                return "HTTP/1.1 404 Not Found\r\n\r\n";
+            }
 
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        std::string contents = buffer.str();
-        std::string msg = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + std::to_string(contents.size()) + "\r\n\r\n" + contents;
-        return msg;
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            std::string contents = buffer.str();
+            std::string msg = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + std::to_string(contents.size()) + "\r\n\r\n" + contents;
+            return msg;
+        }
+        else if (request.getMethod() == "POST")
+        {
+            if (!file.is_open())
+            {
+                file = std::fstream(file_path, std::ios::out);
+                if (!file)
+                {
+                    return "HTTP/1.1 500 Internal Server Error\r\n\r\nFailed to create file.";
+                }
+            }
+            file << request.getBody();
+            file.close();
+
+            return "HTTP/1.1 201 Created\r\n\r\n";
+        }
+        else
+        {
+            return "HTTP/1.1 405 Invalid Method\r\n\r\n";
+        }
     }
     else
     {

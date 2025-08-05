@@ -7,24 +7,34 @@ HttpRequest::HttpRequest(std::string &method, std::string &path, std::unordered_
 HttpRequest HttpRequest::parse(const std::string &input)
 {
     // Parse request line, i.e. GET /echo HTTP/1.1
-    std::string method, path, dummy;
+    std::string method, path, version;
     std::stringstream ss(input);
-    ss >> method >> path >> dummy;
+    std::string line;
+    getline(ss, line);
+    std::stringstream reqLine(line);
+    reqLine >> method >> path >> version;
 
     // Parse headers
     std::string header, content;
     std::unordered_map<std::string, std::string> headers;
-    while (ss >> header >> content)
+    while (std::getline(ss, line) && line != "\r")
     {
+        std::stringstream headerLine(line);
+        headerLine >> header >> content;
+        header.pop_back();
         headers[header] = content;
     }
 
     // Parse body
     std::string body = "";
+    if (headers.count("Content-Length"))
+    {
+        int body_len = stoi(headers["Content-Length"]);
+        body.resize(body_len);
+        ss.read(&body[0], body_len);
+    }
 
-    HttpRequest request = HttpRequest(method, path, headers, body);
-
-    return request;
+    return HttpRequest(method, path, headers, body);
 }
 
 const std::string &HttpRequest::getMethod() const { return method; }
