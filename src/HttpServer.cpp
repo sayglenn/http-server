@@ -59,27 +59,47 @@ void HttpServer::start(const std::string file_dir)
         }
         std::cout << "Client connected\n";
 
-        char buffer[BUFF_SIZE];
-        ssize_t n = recv(client_socket, buffer, BUFF_SIZE - 1, 0);
+        pool.enqueue([client_socket, file_dir]() {
+            char buffer[BUFF_SIZE];
+            std::string leftover;
+            bool keep_alive = true;
+            
+            while (keep_alive) {
+                ssize_t n = recv(client_socket, buffer, BUFF_SIZE, 0);
+                if (n <= 0)
+                    break;
+                
+                leftover.append(buffer, n);
+                while (true) {
+                    size_t header_end = leftover.find("\r\n\r\n");
+                    if (header_end == std::string::npos) {
+                        break;
+                    }
 
-        if (n < 0)
-        {
-            std::cerr << "recv failed" << '\n';
-        }
-        else if (n == 0)
-        {
-            std::cout << "No data sent" << '\n';
-        }
-        else
-        {
-            buffer[n] = '\0';
-            std::string str_request(buffer, n);
-            pool.enqueue([str_request, client_socket, file_dir]()
-                         {
-                HttpRequest request = HttpRequest::parse(str_request);
-                std::string response = RequestHandler::handleRequest(request, file_dir);
-                send(client_socket, response.c_str(), response.size(), 0);
-                close(client_socket); });
-        }
+                    std::string request_to_header = leftover.substr(0, header_end + 4);
+                    size_t content_length = 0;
+                    auto headers = HttpRequest::parse(request_to_header).getHeaders();
+                    if (headers.count("Content-Length"))
+                        content_length = std::stoi(headers["Content-Length"]);
+
+                    size_t total_length = header_end + 4 + content_length;
+                    if (leftover.size() < total_length)
+                        break; 
+
+                    std::string full_request = leftover.substr(0, total_length);
+                    leftover = leftover.substr(total_length);
+
+                    HttpRequest request = HttpRequest::parse(full_request);
+                    std::string response = RequestHandler::handleRequest(request, file_dir);
+                    send(client_socket, response.c_str(), response.size(), 0);
+                    
+                    if (headers.count("Connection") && headers["Connection"] == "close") {
+                        keep_alive = false;
+                    }
+                }
+            }
+
+            close(client_socket);
+        });
     }
 }

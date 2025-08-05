@@ -13,8 +13,13 @@ Simply run the build script in order to start the server.
 ## Design Considerations
 
 1. Implemented a custom `ThreadPool` class that uses basic C++ libraries such as `std::mutex`, `std::atomic`, `std::condition_variable`. This was done for a few reasons:
+
    - Allow for concurrent requests to be handled at the same time without crashing using `std::thread`.
    - Reduces overhead from creating a new thread per HTTP Request and destroying it afterwards, making it more memory efficient.
+
+2. Supports persistent connections which contain the `Connection: keep-alive` header to allow clients to reuse TCP connections.
+
+3. RESTful `/file` endpoint to ensure both `GET` and `POST` methods are supported, using `std::fstream` and restricting to a base directory.
 
 ## Sending Requests
 
